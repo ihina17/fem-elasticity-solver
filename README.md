@@ -15,7 +15,7 @@ The repository contains reusable finite element routines together with benchmark
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/fem-elasticity-solver.git
+git clone https://github.com/ihina17/fem-elasticity-solver.git
 cd fem-elasticity-solver
 ```
 
