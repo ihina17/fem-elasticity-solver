@@ -1,12 +1,14 @@
 # Finite Element Solver for Linear Elasticity
 
 **Ihina Mahajan**  
-Materials Science and Engineering  
+Ph.D. Student, Materials Science and Engineering  
 University of Houston
 
-A finite element solver for one- and two-dimensional linear elasticity problems implemented in Python.
+A finite element method (FEM) solver for linear elasticity developed in Python.
 
-The repository contains reusable finite element routines together with benchmark problems for verifying element behavior, numerical convergence, stress recovery, bending response, and nearly incompressible elasticity.
+This project implements the main components of a finite element solver from the ground up, including element-level formulation, numerical integration, global assembly, boundary conditions, sparse solution, post-processing, and convergence analysis.
+
+The solver is demonstrated on several benchmark elasticity problems using L2, Q4, and Q8 finite elements.
 
 ---
 
@@ -25,97 +27,34 @@ Create a virtual environment:
 python -m venv .venv
 ```
 
-On Windows PowerShell:
+Activate the environment on Windows PowerShell:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 .\.venv\Scripts\Activate.ps1
 ```
 
-Install the required packages:
+Install the dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
-
-## Running the Examples
-
-All problem scripts should be run from the repository root.
-
-### Rod under self-weight
-
-```bash
-python -m problems.rod_self_weight
-```
-
-### Cantilever beam
-
-```bash
-python -m problems.cantilever_beam
-```
-
-### Thick cylinder
-
-```bash
-python -m problems.thick_cylinder
-```
-
-### Cook's membrane
-
-```bash
-python -m problems.cooks_problem
-```
-
-The generated plots are saved automatically in the `figures/` directory.
-
----
-
-## Running the Tests
-
-Run the complete test suite with:
+Run the complete test suite:
 
 ```bash
 python -m pytest tests -v
 ```
 
-The tests cover the finite element utilities, mesh generators, element matrices, global assembly, constitutive models, boundary loads, analytical verification problems, and complete FEM solutions.
-
 ---
 
-## Features
-
-The current implementation includes:
-
-- L2 linear elements for one-dimensional elasticity
-- Q4 bilinear quadrilateral elements
-- Q8 serendipity quadrilateral elements
-- Gaussian quadrature
-- Shape-function evaluation
-- Sparse global stiffness assembly
-- Prescribed displacement boundary conditions
-- Body-force loading
-- Concentrated nodal forces
-- Distributed boundary tractions
-- Plane-stress elasticity
-- Plane-strain elasticity
-- Stress recovery
-- Error calculations
-- Mesh-refinement studies
-
----
-
-## Repository Structure
+## Project Structure
 
 ```text
 fem-elasticity-solver/
 │
-├── README.md
-├── requirements.txt
-├── .gitignore
-│
 ├── src/
+│   │
 │   ├── fem/
 │   │   ├── create_id.py
 │   │   ├── gauss_quadrature.py
@@ -143,68 +82,60 @@ fem-elasticity-solver/
 │   └── cooks_problem.py
 │
 ├── tests/
-│
-└── figures/
+├── figures/
+├── README.md
+├── requirements.txt
+└── .gitignore
 ```
+
+The code is separated into reusable FEM routines, mesh generators, physics-specific routines, benchmark problems, and verification tests.
 
 ---
 
-# Finite Element Formulation
+## FEM Implementation
 
-For small-strain linear elasticity, the governing equilibrium equation is
+The solver follows the standard displacement-based finite element workflow:
 
-\[
-\nabla \cdot \boldsymbol{\sigma}
-+
-\mathbf{b}
-=
-0.
-\]
+```text
+Mesh generation
+      ↓
+Element shape functions
+      ↓
+Gaussian quadrature
+      ↓
+Element stiffness and force vectors
+      ↓
+Global equation numbering
+      ↓
+Sparse global assembly
+      ↓
+Boundary conditions and external loads
+      ↓
+Linear system solution
+      ↓
+Displacement and stress recovery
+      ↓
+Error and convergence analysis
+```
 
-The infinitesimal strain tensor is
+### Implemented capabilities
 
-\[
-\boldsymbol{\varepsilon}
-=
-\frac{1}{2}
-\left(
-\nabla \mathbf{u}
-+
-\nabla \mathbf{u}^{T}
-\right),
-\]
-
-with constitutive relation
-
-\[
-\boldsymbol{\sigma}
-=
-\mathbb{C}
-:
-\boldsymbol{\varepsilon}.
-\]
-
-After spatial discretization, the finite element equations take the form
-
-\[
-\mathbf{K}\mathbf{U}
-=
-\mathbf{F},
-\]
-
-where the element stiffness matrix is
-
-\[
-\mathbf{K}^{e}
-=
-\int_{\Omega_e}
-\mathbf{B}^{T}
-\mathbf{C}
-\mathbf{B}
-\,d\Omega.
-\]
-
-The assembled global system is stored and solved using SciPy sparse linear algebra.
+- L2 linear finite elements
+- Q4 bilinear quadrilateral elements
+- Q8 serendipity quadrilateral elements
+- Numerical Gaussian quadrature
+- Isoparametric element mapping
+- Strain-displacement matrix construction
+- Plane stress and plane strain constitutive models
+- Sparse stiffness-matrix assembly
+- Essential displacement boundary conditions
+- Body-force loading
+- Concentrated nodal loading
+- Distributed boundary tractions
+- Displacement and stress post-processing
+- Analytical error calculations
+- Mesh-refinement studies
+- Automated verification with `pytest`
 
 ---
 
@@ -212,39 +143,15 @@ The assembled global system is stored and solved using SciPy sparse linear algeb
 
 ## 1. Rod Under Self-Weight
 
-The first verification problem is a one-dimensional elastic rod subjected to gravitational loading.
+A one-dimensional elastic rod subjected to gravitational body force is used as the first verification problem.
 
-The analytical displacement is
+The FEM displacement and stress are compared directly with the analytical solution. Mesh refinement is used to verify the expected convergence behavior of the linear element.
 
-\[
-u(x)
-=
-\frac{\rho g}{E}
-\left(
-Lx-\frac{x^2}{2}
-\right),
-\]
+Run:
 
-and the analytical axial stress is
-
-\[
-\sigma(x)
-=
-\rho g(L-x).
-\]
-
-The problem verifies the one-dimensional L2 element and the implementation of distributed body forces.
-
-### Convergence
-
-| Elements | L2 error | H1 error |
-|---:|---:|---:|
-| 4 | 2.1850e-02 | 2.0412e-01 |
-| 8 | 5.4625e-03 | 1.0206e-01 |
-| 16 | 1.3656e-03 | 5.1031e-02 |
-| 32 | 3.4141e-04 | 2.5516e-02 |
-
-The displacement error converges at approximately second order, while the gradient error converges at approximately first order.
+```bash
+python -m problems.rod_self_weight
+```
 
 <p align="center">
   <img src="figures/rod_self_weight_convergence.png" width="600">
@@ -254,38 +161,21 @@ The displacement error converges at approximately second order, while the gradie
 
 ## 2. Cantilever Beam
 
-A two-dimensional cantilever beam subjected to gravity is used to compare Q4 and Q8 elements in a bending-dominated problem.
+A two-dimensional cantilever beam subjected to gravity is used to study bending behavior and element performance.
 
-The parameters are
+The problem compares:
 
-```text
-Length          = 1.0
-Height          = 0.1
-Young's modulus = 200 MPa
-Poisson ratio   = 0
-Density         = 1000 kg/m^3
-Gravity         = 10 m/s^2
+- Q4 elements with different mesh resolutions through the thickness
+- Q8 quadratic elements
+- FEM tip displacement with the Euler-Bernoulli beam solution
+
+The example illustrates the difference between linear and higher-order elements in a bending-dominated problem.
+
+Run:
+
+```bash
+python -m problems.cantilever_beam
 ```
-
-The numerical tip displacement is compared with the Euler-Bernoulli beam solution
-
-\[
-u_y(L)
-=
--\frac{qL^4}{8EI}.
-\]
-
-### Normalized tip displacement
-
-| Nx | Q4, 1 layer | Q4, 4 layers | Q8, 1 layer |
-|---:|---:|---:|---:|
-| 2 | 0.0807 | 0.0807 | 0.9471 |
-| 5 | 0.3400 | 0.3401 | 1.0029 |
-| 10 | 0.6733 | 0.6737 | 1.0064 |
-| 20 | 0.8956 | 0.8963 | 1.0066 |
-| 40 | 0.9764 | 0.9772 | 1.0067 |
-
-The Q8 element captures the bending response much more efficiently than the Q4 element.
 
 <p align="center">
   <img src="figures/cantilever_convergence.png" width="600">
@@ -295,53 +185,22 @@ The Q8 element captures the bending response much more efficiently than the Q4 e
 
 ## 3. Thick Cylinder
 
-The third problem considers a displacement-controlled thick elastic cylinder modeled using plane-stress Q4 elements.
+A two-dimensional thick-cylinder boundary-value problem is solved using Q4 elements.
 
-The analytical radial displacement has the form
+The numerical solution is compared with the analytical radial displacement solution. The example includes:
 
-\[
-u_r(r)
-=
-Ar+\frac{B}{r}.
-\]
+- annular mesh generation
+- plane-stress elasticity
+- prescribed displacement boundary conditions
+- radial displacement recovery
+- strain-energy calculation
+- mesh convergence analysis
 
-The boundary conditions are
+Run:
 
-\[
-u_r(r_i)=0,
-\qquad
-u_r(r_o)=u_0.
-\]
-
-The material and geometry parameters are
-
-```text
-Inner radius       = 0.1
-Outer radius       = 1.0
-Outer displacement = 0.05
-Young's modulus    = 100000
-Poisson ratio      = 0.3
+```bash
+python -m problems.thick_cylinder
 ```
-
-For the representative \(8\times64\) mesh,
-
-```text
-Relative nodal error   = 9.4049e-04
-
-FEM strain energy      = 1.13826435e+03
-Analytical energy      = 1.13943323e+03
-```
-
-### Mesh refinement
-
-| Nr | Ntheta | Relative L2 error | Energy error |
-|---:|---:|---:|---:|
-| 2 | 16 | 1.6201e-02 | 2.2652e-02 |
-| 4 | 32 | 6.2987e-03 | 4.9455e-03 |
-| 8 | 64 | 2.1338e-03 | 1.0258e-03 |
-| 16 | 128 | 6.2748e-04 | 2.1964e-04 |
-
-The FEM displacement approaches the analytical solution under mesh refinement, and the total strain energy converges toward the analytical value.
 
 <table>
 <tr>
@@ -358,68 +217,25 @@ The FEM displacement approaches the analytical solution under mesh refinement, a
 
 ## 4. Cook's Membrane
 
-Cook's membrane is a classical benchmark for distorted meshes and nearly incompressible elasticity.
+Cook's membrane is used as a two-dimensional benchmark for distorted quadrilateral elements and nearly incompressible elasticity.
 
-The left boundary is fixed, while a total upward shear force
+The implementation includes:
 
-\[
-V=100
-\]
+- a tapered Q4 mesh
+- plane-strain elasticity
+- distributed shear traction on the boundary
+- hierarchical mesh refinement
+- stress recovery
+- variation of Poisson's ratio
+- investigation of volumetric locking
 
-is distributed consistently over the right boundary.
+As Poisson's ratio approaches the incompressible limit, the standard displacement-based Q4 formulation becomes artificially stiff. The numerical study captures this behavior through the tip-displacement response.
 
-The problem is modeled using plane strain with
+Run:
 
-```text
-Young's modulus = 100
-Poisson ratio   = 0.4999
+```bash
+python -m problems.cooks_problem
 ```
-
-### Mesh refinement
-
-| Mesh | Vertical tip displacement |
-|---:|---:|
-| 2 x 2 | 5.08496 |
-| 4 x 4 | 5.20732 |
-| 8 x 8 | 5.35029 |
-| 16 x 16 | 5.77859 |
-| 32 x 32 | 7.08263 |
-
-### Effect of Poisson's Ratio
-
-For a \(32\times32\) Q4 mesh:
-
-| Poisson ratio | Vertical tip displacement |
-|---:|---:|
-| 0.0000 | 24.1844 |
-| 0.1000 | 24.1963 |
-| 0.2500 | 23.2843 |
-| 0.4000 | 21.1003 |
-| 0.4500 | 19.9417 |
-| 0.4900 | 17.9879 |
-| 0.4999 | 7.08263 |
-
-As the material approaches incompressibility, the standard displacement-based Q4 formulation becomes artificially stiff. The strong reduction in tip displacement near
-
-\[
-\nu \rightarrow 0.5
-\]
-
-demonstrates volumetric locking.
-
-The implementation also evaluates the averaged stress trace
-
-\[
-\operatorname{tr}(\mathbf{T})
-=
-\sigma_{xx}
-+
-\sigma_{yy}
-+
-\sigma_{zz}
-\]
-
-along the line \(BC\).
 
 <table>
 <tr>
@@ -434,12 +250,36 @@ along the line \(BC\).
 
 ---
 
-## Numerical Tools
+## Verification
 
-This project uses Python with NumPy for numerical operations, SciPy for sparse matrix assembly and linear solution, Matplotlib for visualization, and Pytest for verification.
+The solver includes automated tests for the main numerical components, including:
+
+- shape functions
+- Gaussian quadrature
+- mesh generation
+- equation numbering
+- constitutive matrices
+- element stiffness matrices
+- rigid-body modes
+- global assembly
+- boundary traction integration
+- analytical benchmark solutions
+- complete FEM problem solutions
+
+Run:
+
+```bash
+python -m pytest tests -v
+```
 
 ---
 
-## Notes
+## Tools
 
-The project was developed as a finite element implementation and verification study for linear elasticity. The benchmark problems were selected to exercise different aspects of the solver, including body-force loading, bending behavior, analytical verification, mesh convergence, distributed boundary traction, stress recovery, and volumetric locking.
+**Python · NumPy · SciPy · Matplotlib · Pytest**
+
+---
+
+## About
+
+This repository was developed to build and verify a finite element solver for linear elasticity while exploring numerical behavior across one-dimensional elasticity, bending, two-dimensional boundary-value problems, higher-order elements, mesh convergence, and nearly incompressible materials.
